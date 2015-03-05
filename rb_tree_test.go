@@ -1,7 +1,6 @@
 package rb_tree
 
 import (
-	_ "log"
 	"testing"
 )
 
@@ -135,7 +134,7 @@ func TestRbTreeBig(t *testing.T) {
 }
 
 func validateTree(tree *RbTree, t *testing.T) {
-	if !tree.root.black {
+	if !tree.root.black() {
 		t.Errorf("Root %p is not black", tree.root)
 	}
 	validateNode(tree.root, t)
@@ -147,7 +146,7 @@ func validateNode(n *node, t *testing.T) int {
 	}
 
 	if n.leaf {
-		if !n.black {
+		if n.red() {
 			t.Errorf("Leaf node %p is not black", n)
 		}
 		return 1 // No children to check.
@@ -157,21 +156,23 @@ func validateNode(n *node, t *testing.T) int {
 	leftBlackCount := 0
 	rightBlackCount := 0
 	if n.left != nil {
+		validateHasParent(n.left, n, t)
 		if !n.left.leaf && n.val <= n.left.val {
 			t.Errorf("Node %p (%v) has value <= left child %p (%v)",
 				n, n.val, n.left, n.left.val)
 		}
-		if !n.black && !n.left.black {
+		if n.red() && n.left.red() {
 			t.Errorf("Red node %p has red left child %p", n, n.left)
 		}
 		leftBlackCount = validateNode(n.left, t)
 	}
 	if n.right != nil {
+		validateHasParent(n.right, n, t)
 		if !n.right.leaf && n.val > n.right.val {
 			t.Errorf("Node %p (%v) has value > right child %p (%v)",
 				n, n.val, n.right, n.right.val)
 		}
-		if !n.black && !n.right.black {
+		if n.red() && n.right.red() {
 			t.Errorf("Red node %p has red right child %p", n, n.right)
 		}
 		rightBlackCount = validateNode(n.right, t)
@@ -183,7 +184,7 @@ func validateNode(n *node, t *testing.T) int {
 			n, n.left, leftBlackCount, n.right, rightBlackCount)
 	}
 
-	if n.black {
+	if n.black() {
 		return leftBlackCount + 1
 	} else {
 		return leftBlackCount
@@ -193,5 +194,11 @@ func validateNode(n *node, t *testing.T) int {
 func validateHasChild(n, child *node, t *testing.T) {
 	if n.left != child && n.right != child {
 		t.Errorf("Node %p does not have child %p", n, child)
+	}
+}
+
+func validateHasParent(n, parent *node, t *testing.T) {
+	if n.parent != parent {
+		t.Errorf("Node %p does not have parent %p", n, parent)
 	}
 }

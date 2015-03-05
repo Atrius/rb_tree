@@ -4,13 +4,24 @@ type node struct {
 	val         int
 	left, right *node
 	parent      *node
-	black, leaf bool
+	color, leaf bool
+}
+
+const red = false
+const black = true
+
+func (n *node) black() bool {
+	return n.color == black
+}
+
+func (n *node) red() bool {
+	return n.color == red
 }
 
 func (n *node) add(val int) {
 	if n.leaf {
 		n.leaf = false
-		n.black = false
+		n.color = red
 		n.val = val
 		n.left = newLeaf(n)
 		n.right = newLeaf(n)
@@ -29,12 +40,12 @@ func rebalanceAdd(n *node) {
 
 	// Case 1:  n is the root.
 	if p == nil {
-		n.black = true
+		n.color = black
 		return
 	}
 
 	// Case 2:  n's parent is black and n is red.  Nothing to do.
-	if p.black {
+	if p.black() {
 		return
 	}
 
@@ -46,11 +57,11 @@ func rebalanceAdd(n *node) {
 	}
 
 	// Case 3:  Parent and uncle are red.
-	if !u.black {
+	if u.red() {
 		// Turn p and u black, g red.
-		p.black = true
-		u.black = true
-		g.black = false
+		p.color = black
+		u.color = black
+		g.color = red
 		// Rebalance at g.
 		rebalanceAdd(g)
 		return // No further operations on n, done rebalancing this portion.
@@ -65,13 +76,13 @@ func rebalanceAdd(n *node) {
 	}
 
 	// Case 5:  Parent is red but uncle is black, outer case.
-	g.black = false
-	p.black = true
+	g.color = red
+	p.color = black
 	rotate(g, p)
 }
 
 func newLeaf(parent *node) *node {
-	return &node{0, nil, nil, parent, true, true}
+	return &node{0, nil, nil, parent, black, true}
 }
 
 func (n *node) find(val int) *node {
@@ -136,11 +147,11 @@ func (n *node) delete() {
 		replacement = n.right
 	}
 	p.replaceChild(n, replacement)
-	if n.black {
+	if n.black() {
 		// If we're removing a black node and replacing it with a red one, just
 		// turn the replacement black and there's no rebalancing necessary.
-		if !replacement.black {
-			replacement.black = true
+		if replacement.red() {
+			replacement.color = black
 		} else {
 			rebalanceDelete(replacement)
 		}
@@ -162,7 +173,7 @@ func (n *node) replaceChild(child, replacement *node) {
 func rebalanceDelete(n *node) {
 	// Case 1:  n is root.  Turn it black.
 	if n.parent == nil {
-		n.black = true
+		n.color = black
 		return
 	}
 
@@ -174,9 +185,9 @@ func rebalanceDelete(n *node) {
 	}
 
 	// Case 2:  s is red.
-	if !s.black {
-		s.black = true
-		p.black = false
+	if s.red() {
+		s.color = black
+		p.color = red
 		rotate(p, s)
 
 		// Recompute s.
@@ -187,46 +198,46 @@ func rebalanceDelete(n *node) {
 	}
 
 	// Case 3:  p, s, and s's children are all black.
-	if p.black && s.black && s.right.black && s.left.black {
-		s.black = false
+	if p.black() && s.black() && s.right.black() && s.left.black() {
+		s.color = red
 		rebalanceDelete(p)
 		return // Nothing more to rebalance in this subtree.
 	}
 
 	// Case 4:  p is red, s and s's children are black.
-	if !p.black && s.black && s.right.black && s.left.black {
-		p.black = true
-		s.black = false
+	if p.red() && s.black() && s.right.black() && s.left.black() {
+		p.color = black
+		s.color = red
 		return // Nothing more to rebalance.
 	}
 
 	// Case 5:  s has one red child, inner case.
-	if n == p.left && s.right.black && !s.left.black {
+	if n == p.left && s.right.black() && s.left.red() {
 		rotate(s, s.left)
-		s.black = false // Turn the old s red.
+		s.color = red   // Turn the old s red.
 		s = p.right     // Relabel s.
-		s.black = true  // Turn the new s black.
-	} else if n == p.right && s.left.black && !s.right.black {
+		s.color = black // Turn the new s black.
+	} else if n == p.right && s.left.black() && s.right.red() {
 		rotate(s, s.right)
-		s.black = false // Turn the old s red.
+		s.color = red   // Turn the old s red.
 		s = p.left      // Relabel s.
-		s.black = true  // Turn the new s black.
+		s.color = black // Turn the new s black.
 	}
 
 	// Case 6:  s has one red child, outer, or two red children.
 	// Turn s's outer child black.
 	if n == p.left {
-		s.right.black = true
+		s.right.color = black
 	} else {
-		s.left.black = true
+		s.left.color = black
 	}
 
 	// Rotate p to s.
 	rotate(p, s)
 
 	// Swap colors of s and p.  S is known to be black due to case 2.
-	s.black = p.black
-	p.black = true
+	s.color = p.color
+	p.color = black
 }
 
 func rotate(oldParent, newParent *node) {
@@ -259,7 +270,7 @@ func (t *RbTree) Add(val int) {
 	}
 
 	t.root.add(val)
-	t.root = t.root.findRoot()
+	t.root = findRoot(t.root)
 }
 
 func (t *RbTree) Remove(val int) {
@@ -269,12 +280,12 @@ func (t *RbTree) Remove(val int) {
 	}
 
 	n.remove()
-	t.root = t.root.findRoot()
+	t.root = findRoot(t.root)
 }
 
-func (n *node) findRoot() *node {
+func findRoot(n *node) *node {
 	if n.parent == nil {
 		return n
 	}
-	return n.parent.findRoot()
+	return findRoot(n.parent)
 }
