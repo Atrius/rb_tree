@@ -1,6 +1,7 @@
 package rb_tree
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -120,16 +121,33 @@ func TestRbTreeOuter(t *testing.T) {
 	}
 }
 
-func TestRbTreeBig(t *testing.T) {
+func TestRbTreeRemoveMissing(t *testing.T) {
 	r := RbTree{nil}
-	for i := 0; i < 100; i++ {
-		r.Add(9 - i)
-		validateTree(&r, t)
-	}
-
-	for i := 0; i < 100; i++ {
+	r.Add(0)
+	for i := 0; i < 10; i++ {
 		r.Remove(i)
 		validateTree(&r, t)
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	r := RbTree{nil}
+	for i := 0; i < b.N; i++ {
+		r.Add(rand.Int())
+	}
+}
+
+func BenchmarkRemove(b *testing.B) {
+	r := RbTree{nil}
+	vals := make([]int, b.N)
+	for i := 0; i < b.N; i++ {
+		val := rand.Int()
+		r.Add(val)
+		vals = append(vals, val)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.Remove(vals[i])
 	}
 }
 
@@ -157,8 +175,8 @@ func validateNode(n *node, t *testing.T) int {
 	rightBlackCount := 0
 	if n.left != nil {
 		validateHasParent(n.left, n, t)
-		if !n.left.leaf && n.val <= n.left.val {
-			t.Errorf("Node %p (%v) has value <= left child %p (%v)",
+		if !n.left.leaf && n.less(n.val, n.left.val) {
+			t.Errorf("Node %p (%v) has value < left child %p (%v)",
 				n, n.val, n.left, n.left.val)
 		}
 		if n.red() && n.left.red() {
@@ -168,7 +186,7 @@ func validateNode(n *node, t *testing.T) int {
 	}
 	if n.right != nil {
 		validateHasParent(n.right, n, t)
-		if !n.right.leaf && n.val > n.right.val {
+		if !n.right.leaf && n.less(n.right.val, n.val) {
 			t.Errorf("Node %p (%v) has value > right child %p (%v)",
 				n, n.val, n.right, n.right.val)
 		}

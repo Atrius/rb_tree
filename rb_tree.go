@@ -1,10 +1,15 @@
 package rb_tree
 
+// Should return true if a is less than b.  If a and b are equal, both
+// Less(a, b) and Less(b, a) should return false.
+type Less func(a, b interface{}) bool
+
 type node struct {
-	val         int
+	val         interface{}
 	left, right *node
 	parent      *node
 	color, leaf bool
+	less        Less
 }
 
 const red = false
@@ -18,7 +23,7 @@ func (n *node) red() bool {
 	return n.color == red
 }
 
-func (n *node) add(val int) {
+func (n *node) add(val interface{}) {
 	if n.leaf {
 		n.leaf = false
 		n.color = red
@@ -28,7 +33,7 @@ func (n *node) add(val int) {
 		rebalanceAdd(n)
 		return
 	}
-	if val < n.val {
+	if n.less(val, n.val) {
 		n.left.add(val)
 	} else {
 		n.right.add(val)
@@ -82,19 +87,23 @@ func rebalanceAdd(n *node) {
 }
 
 func newLeaf(parent *node) *node {
-	return &node{0, nil, nil, parent, black, true}
+	return &node{nil, nil, nil, parent, black, true, parent.less}
 }
 
-func (n *node) find(val int) *node {
+func newRoot(less Less) *node {
+	return &node{nil, nil, nil, nil, black, true, less}
+}
+
+func (n *node) find(val interface{}) *node {
 	if n.leaf {
 		return nil
 	}
-	if n.val == val {
-		return n
-	} else if val < n.val {
+	if n.less(val, n.val) {
 		return n.left.find(val)
-	} else {
+	} else if n.less(n.val, val) {
 		return n.right.find(val)
+	} else {
+		return n
 	}
 }
 
@@ -266,7 +275,7 @@ type RbTree struct {
 
 func (t *RbTree) Add(val int) {
 	if t.root == nil {
-		t.root = newLeaf(nil)
+		t.root = newRoot(intLess)
 	}
 
 	t.root.add(val)
@@ -288,4 +297,8 @@ func findRoot(n *node) *node {
 		return n
 	}
 	return findRoot(n.parent)
+}
+
+func intLess(a, b interface{}) bool {
+	return a.(int) < b.(int)
 }
