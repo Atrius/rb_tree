@@ -143,7 +143,7 @@ func BenchmarkRemove(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		val := rand.Int()
 		r.Add(val)
-		vals = append(vals, val)
+		vals[i] = val
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

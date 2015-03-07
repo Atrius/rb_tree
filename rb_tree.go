@@ -25,19 +25,21 @@ func (n *node) red() bool {
 
 func (n *node) add(val interface{}) {
 	if n.leaf {
-		n.leaf = false
-		n.color = red
-		n.val = val
-		n.left = newLeaf(n)
-		n.right = newLeaf(n)
-		rebalanceAdd(n)
-		return
-	}
-	if n.less(val, n.val) {
+		n.makeInterior(val)
+	} else if n.less(val, n.val) {
 		n.left.add(val)
 	} else {
 		n.right.add(val)
 	}
+}
+
+func (n *node) makeInterior(val interface{}) {
+	n.leaf = false
+	n.color = red
+	n.val = val
+	n.left = newLeaf(n)
+	n.right = newLeaf(n)
+	rebalanceAdd(n)
 }
 
 func rebalanceAdd(n *node) {
