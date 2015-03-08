@@ -6,66 +6,66 @@ import (
 )
 
 func TestRbTreeBasicRight(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < 10; i++ {
 		r.Add(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	for i := 0; i < 10; i++ {
 		r.Remove(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeBasicLeft(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < 10; i++ {
 		r.Add(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	for i := 0; i < 10; i++ {
 		r.Remove(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeInverseRight(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < 10; i++ {
 		r.Add(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	for i := 0; i < 10; i++ {
 		r.Remove(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeInverseLeft(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < 10; i++ {
 		r.Add(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	for i := 0; i < 10; i++ {
 		r.Remove(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeInner(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	// Adding nodes to the "middle" of the tree covers add case 4:  n's parent
 	// is red but uncle is black, and n is the "inner" child of p.
 	for i := 0; i < 5; i++ {
 		r.Add(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Add(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	// Removing nodes the same way we added them covers delete case 5's first
@@ -73,21 +73,21 @@ func TestRbTreeInner(t *testing.T) {
 	// is black.
 	for i := 0; i < 5; i++ {
 		r.Remove(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Remove(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeInnerRemoveReverse(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	// Adding nodes to the "middle" of the tree covers add case 4:  n's parent
 	// is red but uncle is black, and n is the "inner" child of p.
 	for i := 0; i < 5; i++ {
 		r.Add(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Add(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	// Removing nodes the same way they were added, but starting with a higher
@@ -95,19 +95,19 @@ func TestRbTreeInnerRemoveReverse(t *testing.T) {
 	// s's right child is red and left child is black.
 	for i := 0; i < 5; i++ {
 		r.Remove(9 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Remove(i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeOuter(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < 5; i++ {
 		r.Add(5 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Add(5 + i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 
 	// Removing nodes from the outside first covers the case where a black node
@@ -115,30 +115,59 @@ func TestRbTreeOuter(t *testing.T) {
 	// This circumvents the complex rebalancing on delete.
 	for i := 0; i < 5; i++ {
 		r.Remove(5 - i)
-		validateTree(&r, t)
+		validateTree(r, t)
 		r.Remove(5 + i)
-		validateTree(&r, t)
+		validateTree(r, t)
 	}
 }
 
 func TestRbTreeRemoveMissing(t *testing.T) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	r.Add(0)
 	for i := 0; i < 10; i++ {
 		r.Remove(i)
-		validateTree(&r, t)
+		validateTree(r, t)
+	}
+}
+
+func TestRbTreeFind(t *testing.T) {
+	r := Create(intLess)
+	for i := 0; i < 10; i++ {
+		if r.Find(i) != nil {
+			t.Errorf("Found %v in empty tree", i)
+		}
+		validateTree(r, t)
+	}
+
+	for i := 0; i < 10; i++ {
+		r.Add(i)
+		validateTree(r, t)
+	}
+
+	for i := 0; i < 10; i++ {
+		if r.Find(i) != i {
+			t.Errorf("Did not find %v in tree", i)
+		}
+		validateTree(r, t)
+	}
+
+	for i := 10; i < 20; i++ {
+		if r.Find(i) != nil {
+			t.Errorf("Found non-existent element %v in tree", i)
+		}
+		validateTree(r, t)
 	}
 }
 
 func BenchmarkAdd(b *testing.B) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	for i := 0; i < b.N; i++ {
 		r.Add(rand.Int())
 	}
 }
 
 func BenchmarkRemove(b *testing.B) {
-	r := RbTree{nil}
+	r := Create(intLess)
 	vals := make([]int, b.N)
 	for i := 0; i < b.N; i++ {
 		val := rand.Int()
@@ -149,6 +178,10 @@ func BenchmarkRemove(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		r.Remove(vals[i])
 	}
+}
+
+func intLess(a, b interface{}) bool {
+	return a.(int) < b.(int)
 }
 
 func validateTree(tree *RbTree, t *testing.T) {

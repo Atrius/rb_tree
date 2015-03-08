@@ -42,6 +42,10 @@ func (n *node) makeInterior(val interface{}) {
 	rebalanceAdd(n)
 }
 
+func newLeaf(parent *node) *node {
+	return &node{parent: parent, color: black, leaf: true, less: parent.less}
+}
+
 func rebalanceAdd(n *node) {
 	p := n.parent
 
@@ -88,14 +92,6 @@ func rebalanceAdd(n *node) {
 	rotate(g, p)
 }
 
-func newLeaf(parent *node) *node {
-	return &node{nil, nil, nil, parent, black, true, parent.less}
-}
-
-func newRoot(less Less) *node {
-	return &node{nil, nil, nil, nil, black, true, less}
-}
-
 func (n *node) find(val interface{}) *node {
 	if n.leaf {
 		return nil
@@ -109,7 +105,7 @@ func (n *node) find(val interface{}) *node {
 	}
 }
 
-func (n *node) remove() {
+func (n *node) removeValue() {
 	candidate := n
 	if !n.left.leaf {
 		candidate = n.left
@@ -128,10 +124,10 @@ func (n *node) remove() {
 	}
 
 	n.val = candidate.val
-	candidate.delete()
+	candidate.removeNode()
 }
 
-func (n *node) delete() {
+func (n *node) removeNode() {
 	p := n.parent
 	// Handle deleting the root.  Resets the root to a leaf node.
 	if p == nil {
@@ -275,23 +271,31 @@ type RbTree struct {
 	root *node
 }
 
-func (t *RbTree) Add(val int) {
-	if t.root == nil {
-		t.root = newRoot(intLess)
-	}
+func Create(less Less) *RbTree {
+	return &RbTree{&node{color: black, leaf: true, less: less}}
+}
 
+func (t *RbTree) Add(val interface{}) {
 	t.root.add(val)
 	t.root = findRoot(t.root)
 }
 
-func (t *RbTree) Remove(val int) {
+func (t *RbTree) Remove(val interface{}) {
 	n := t.root.find(val)
 	if n == nil {
 		return
 	}
 
-	n.remove()
+	n.removeValue()
 	t.root = findRoot(t.root)
+}
+
+func (t *RbTree) Find(val interface{}) interface{} {
+	n := t.root.find(val)
+	if n == nil {
+		return nil
+	}
+	return n.val
 }
 
 func findRoot(n *node) *node {
@@ -299,8 +303,4 @@ func findRoot(n *node) *node {
 		return n
 	}
 	return findRoot(n.parent)
-}
-
-func intLess(a, b interface{}) bool {
-	return a.(int) < b.(int)
 }
